@@ -304,12 +304,12 @@ input[type=file]::file-selector-button{margin-right:12px;padding:8px 14px;border
 </section>
 
 <section id="vault">
- <div class="strip hero"><div class="hero-text"><span class="eyebrow">Forum berbagi anonim</span><h2>Not My Vault: cerita ini <mark>bukan rahasia</mark> yang harus kamu simpan sendiri.</h2><p>Forum anonim untuk bercerita, saling menguatkan, dan berbagi tips keselamatan. Tanpa nama, tanpa akun.</p></div><div class="card rules"><h3>Aturan ruang ini</h3><ul><li>Percayai penyintas.</li><li>Jangan tanya soal pakaian atau alasan korban ada di sana.</li><li>Jangan menyalahkan korban.</li></ul></div></div>
+ <div class="strip hero"><div class="hero-text"><span class="eyebrow">Ruang Cerita</span><h2>Cerita ini <mark>bukan rahasia</mark> yang harus kamu simpan sendiri.</h2><p>Tempat untuk berbagi cerita, saling mendukung, dan bertukar tips keselamatan secara anonim.</p></div><div class="card rules"><h3>Aturan Ruang Cerita</h3><ul><li>Hargai cerita dan pengalaman setiap orang.</li><li>Jangan menghakimi atau mempertanyakan pilihan korban.</li><li>- Berikan dukungan tanpa menyalahkan korban.</li></ul></div></div>
  <div class="grid">
   <div id="vfeed" aria-live="polite"></div>
   <form class="card" id="vform" novalidate style="align-self:start">
    <h2>Bagikan ceritamu</h2>
-   <p class="sub">Kamu menentukan sendiri apa yang dibagikan. Jangan menulis nama, nomor telepon, atau alamat siapa pun.</p>
+   <p class="sub">Bagikan cerita sesuai kenyamananmu. Hindari mencantumkan nama, nomor telepon, atau alamat pribadi siapa pun.</p>
    <label for="vC">Kategori</label>
    <select id="vC"><option value="Cerita">Cerita saya</option><option value="Dukungan">Butuh dukungan atau saran</option><option value="Tips">Tips keselamatan</option></select>
    <label for="vT">Isi</label>
@@ -317,8 +317,7 @@ input[type=file]::file-selector-button{margin-right:12px;padding:8px 14px;border
    <div class="chip"><input type="checkbox" id="vCW" checked><label for="vCW" style="margin:0;font-weight:400">Beri peringatan konten agar pembaca bisa memilih untuk membuka atau tidak.</label></div>
    <p style="margin-top:16px"><button class="btn" type="submit">Bagikan secara anonim</button></p>
    <div class="msg" id="vMsg" role="status"></div>
-   <p class="hint">Kalau kamu dalam bahaya sekarang, hubungi <a href="tel:112">112</a> atau <a href="tel:110">110</a>.</p>
-  </form>
+   <p class="hint">Jika dalam bahaya, segera hubungi <a href="tel:129">129</a>, <a href="tel:112">112</a>, atau <a href="tel:110">110</a>.</p>
  </div>
 </section>
 
@@ -548,7 +547,7 @@ function renderVault(){
   if(p.cw&&!revealed[p.id]){var w=mk("div","cwb","Peringatan konten: cerita ini menyinggung kekerasan seksual. ");w.appendChild(vbtn("Tampilkan",function(){revealed[p.id]=1;renderVault()}));d.appendChild(w)}
   else d.appendChild(mk("p","",p.t));
   var a=mk("div","pact");
-  var rb=vbtn("Aku percaya kamu · "+p.r,function(){
+  var rb=vbtn("Kirim Dukungan · "+p.r,function(){
    if(!ONLINE){p.me=!p.me;p.r+=p.me?1:-1;vsave();renderVault();return}
    if(p.me)return;
    sb("reactions",{method:"POST",prefer:"return=minimal",body:{post_id:p.id,device:DEV}})
