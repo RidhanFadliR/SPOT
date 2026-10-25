@@ -187,6 +187,16 @@ input[type=file]::file-selector-button{margin-right:12px;padding:8px 14px;border
 body{display:flex;flex-direction:column}
 main{flex:1 0 auto;width:100%}
 footer{margin-top:auto;flex:none;margin-left:auto;margin-right:auto}
+.big{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.big .card{padding:20px;display:flex;flex-direction:column;gap:2px;line-height:1.5;font-size:14.5px}
+.big .card b{font-size:clamp(30px,3.4vw,40px)}
+@media(max-width:1000px){.big{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.big{grid-template-columns:1fr}}
+.arow{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}
+.arow:first-child{border-top:0}
+.rk{width:32px;height:32px;border-radius:50%;background:var(--pink-soft);color:var(--pink-d);display:grid;place-items:center;font-size:14px}
+.an{font-weight:600;font-size:15px;line-height:1.4;overflow-wrap:anywhere}
+.ac2{color:var(--t3);font-size:14px;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -300,10 +310,9 @@ footer{margin-top:auto;flex:none;margin-left:auto;margin-right:auto}
   <div class="gal" id="gal"></div>
  </div>
  <div class="card" style="margin-top:20px">
-  <h2>Dari data ke tindakan</h2>
-  <p class="sub">Data laporan membantu mengidentifikasi area rawan sebagai dasar untuk mendorong perbaikan keamanan dan fasilitas pendukung.</p>
+  <h2>Area paling banyak dilaporkan</h2>
+  <p class="sub">Lokasi dengan laporan terbanyak, dikelompokkan per area sekitar 300 meter.</p>
   <div id="advice"></div>
-  <p><button class="btn ghost" id="print">Cetak ringkasan untuk advokasi</button></p>
  </div>
 </section>
 
@@ -401,7 +410,7 @@ var NETS={};
 function setNet(k,m){NETS[k]=m;var seen={},t=Object.keys(NETS).map(function(x){return NETS[x]}).filter(function(x){if(!x||seen[x])return false;seen[x]=1;return true}).join(" ");var n=document.getElementById("net"),tx=document.getElementById("netTxt");if(n&&tx){tx.textContent=t;n.hidden=!t}}
 var store=[];var photos=[];var loadFail=false,vfail=false;
 if(!ONLINE){try{var s=localStorage.getItem("spot-reports");if(s)store=JSON.parse(s)}catch(e){}}
-var all=function(){return ONLINE?store:seed.concat(store)};
+var all=function(){return ONLINE?store.filter(function(r){return r.lat!=null}):seed.concat(store)};
 function loadReports(){if(!ONLINE)return Promise.resolve();
  return sb("public_reports?select=id,lat,lng,t,w,f,place,note,env&order=created_at.asc&limit=1000").then(function(rows){store=(rows||[]).map(function(r){r.env=r.env||[];r.note=r.note||"";return r});loadFail=false;setNet("r","")},function(e){loadFail=true;setNet("r",LOADMSG(e))})
  .then(function(){return sb("approved_photos?select=id,t,w,place,photo&order=created_at.desc&limit=24")}).then(function(rows){photos=rows||[]},function(){photos=[]})}
@@ -506,11 +515,21 @@ function bars(){renderGal();
  var tb=document.getElementById("typeBars");tb.innerHTML="";
  TYPES.forEach(function(k){var n=d.filter(function(r){return r.t===k}).length,p=d.length?Math.round(n*100/d.length):0;
   tb.insertAdjacentHTML("beforeend",'<div class="brow"><span>'+k+'</span><div class="track"><div class="fill" style="width:'+p+'%"></div></div><b>'+p+'%</b></div>')});
- var env={};d.forEach(function(r){r.env.forEach(function(v){env[v]=(env[v]||0)+1})});
- var rows=Object.keys(env).sort(function(a,b){return env[b]-env[a]}).slice(0,3);
- var map={"Penerangan minim":"Tambah lampu jalan (Dinas PUPR).","Area sepi":"Tambah patroli dan aktivitas warga di area itu.","Tanpa CCTV":"Pasang CCTV (Dinas Perhubungan).","Ramai tapi tidak ada yang menolong":"Adakan pelatihan bystander intervention."};
- document.getElementById("advice").innerHTML=rows.length?rows.map(function(k){return'<div class="brow" style="grid-template-columns:1fr"><span><b>'+k+'</b> ('+env[k]+' laporan): '+(map[k]||"")+'</span></div>'}).join(""):"Belum ada data kondisi sekitar."}
-document.getElementById("print").addEventListener("click",function(){try{window.print()}catch(e){alert("Cetak tidak tersedia di sini. Buka halaman ini di browser lalu tekan Ctrl+P.")}});
+ var cells={};d.forEach(function(r){if(r.lat==null)return;var k=Math.round(r.lat/0.003)+"_"+Math.round(r.lng/0.003);(cells[k]=cells[k]||[]).push(r)});
+ var rows=Object.keys(cells).map(function(k){return cells[k]}).sort(function(x,y){return y.length-x.length}).slice(0,5);
+ var adv=document.getElementById("advice");adv.innerHTML="";
+ if(!rows.length){adv.textContent="Belum ada laporan.";return}
+ var mx=rows[0].length;
+ rows.forEach(function(g,i){var pc={},tc={};g.forEach(function(r){pc[r.place]=(pc[r.place]||0)+1;tc[r.t]=(tc[r.t]||0)+1});
+  var name=Object.keys(pc).sort(function(a,b){return pc[b]-pc[a]})[0],top=Object.keys(tc).sort(function(a,b){return tc[b]-tc[a]})[0];
+  var row=document.createElement("div");row.className="arow";
+  var n=document.createElement("b");n.className="rk";n.textContent=i+1;
+  var mid=document.createElement("div");var t1=document.createElement("div");t1.className="an";t1.textContent=name;
+  var t2=document.createElement("div");t2.className="hint";t2.style.margin="2px 0 6px";t2.textContent="Paling sering: "+top;
+  var tr=document.createElement("div");tr.className="track";var fl=document.createElement("div");fl.className="fill";fl.style.width=Math.round(g.length*100/mx)+"%";tr.appendChild(fl);
+  mid.appendChild(t1);mid.appendChild(t2);mid.appendChild(tr);
+  var c=document.createElement("b");c.className="ac2";c.textContent=g.length+" laporan";
+  row.appendChild(n);row.appendChild(mid);row.appendChild(c);adv.appendChild(row)})}
 // Not My Vault (forum berbagi)
 var VSEED=[
 {id:"s1",c:"Cerita",t:"Aku diikuti sampai depan kos sepulang les. Awalnya kupikir cuma perasaan. Setelah cerita ke teman, aku sadar itu bukan salahku.",cw:true,r:12,me:false,rep:["Aku percaya kamu. Terima kasih sudah berani cerita."]},
