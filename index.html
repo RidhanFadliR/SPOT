@@ -197,6 +197,8 @@ footer{margin-top:auto;flex:none;margin-left:auto;margin-right:auto}
 .rk{width:32px;height:32px;border-radius:50%;background:var(--pink-soft);color:var(--pink-d);display:grid;place-items:center;font-size:14px}
 .an{font-weight:600;font-size:15px;line-height:1.4;overflow-wrap:anywhere}
 .ac2{color:var(--t3);font-size:14px;white-space:nowrap}
+.tg[aria-pressed="true"]{background:var(--green-soft);color:var(--green-d);border-color:var(--green)}
+@media(max-width:420px){.acts{gap:6px}.sos{padding:8px 12px}}
 </style>
 </head>
 <body>
@@ -209,7 +211,7 @@ footer{margin-top:auto;flex:none;margin-left:auto;margin-right:auto}
   <button role="tab" aria-selected="false" data-t="vault">Ruang Cerita</button>
   <button role="tab" aria-selected="false" data-t="bantuan">Bantuan</button>
  </nav>
- <div class="acts"><button class="tg" id="tg" type="button" aria-label="Ganti ke mode terang" title="Ganti mode terang atau gelap"></button><button class="sos" id="sos" type="button"><span class="lg">Butuh bantuan?</span><span class="sm">Darurat</span></button></div>
+ <div class="acts"><button class="tg" id="tts" type="button" aria-pressed="false" aria-label="Aktifkan suara: teks dibacakan saat disentuh" title="Suara: bacakan teks saat disentuh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></button><button class="tg" id="tg" type="button" aria-label="Ganti ke mode terang" title="Ganti mode terang atau gelap"></button><button class="sos" id="sos" type="button"><span class="lg">Butuh bantuan?</span><span class="sm">Darurat</span></button></div>
 </div></header>
 
 <main><div class="wrap">
@@ -455,7 +457,7 @@ function render(){
  if(LM){layer.clearLayers();
   d.forEach(function(r){L.circleMarker([r.lat,r.lng],{radius:30,stroke:false,fillColor:"#E11D74",fillOpacity:.16,interactive:false}).addTo(layer)});
   d.forEach(function(r){var c=L.circleMarker([r.lat,r.lng],{radius:7,color:"#fff",weight:2.5,fillColor:"#14261F",fillOpacity:1}).addTo(layer);
-   var box=document.createElement("div"),b=document.createElement("b");b.textContent=r.t+" · "+r.w;box.appendChild(b);box.appendChild(document.createElement("br"));box.appendChild(document.createTextNode(r.note||r.place));c.bindPopup(box)});
+   var box=document.createElement("div"),b=document.createElement("b");b.textContent=r.t+" · "+r.w;box.appendChild(b);box.appendChild(document.createElement("br"));box.appendChild(document.createTextNode(r.note||r.place));c.bindPopup(box);c.on("click",function(){if(TTS)speak(r.t+", "+r.w+", "+r.place+". "+(r.note||""))})});
   if(!fitted&&ONLINE&&d.length){fitted=true;LM.fitBounds(L.latLngBounds(d.map(function(r){return[r.lat,r.lng]})),{padding:[40,40],maxZoom:16})}}
  document.getElementById("sTot").textContent=d.length;
  var cells={};d.forEach(function(r){var k=Math.round(r.lat/0.006)+"-"+Math.round(r.lng/0.006);cells[k]=(cells[k]||0)+1});
@@ -621,6 +623,18 @@ var MOON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-widt
 function setTh(m){TH=m;document.documentElement.setAttribute("data-theme",m);var tg=document.getElementById("tg");tg.innerHTML=m==="dark"?SUN:MOON;tg.setAttribute("aria-label",m==="dark"?"Ganti ke mode terang":"Ganti ke mode gelap");try{localStorage.setItem("spot-theme",m)}catch(e){}if(window.L&&TLS.length)applyTiles()}
 document.getElementById("tg").addEventListener("click",function(){setTh(TH==="dark"?"light":"dark")});
 setTh(TH);
+
+// Suara: bacakan teks yang disentuh (untuk tunanetra dan pengguna disleksia)
+var TTS=false;try{TTS=localStorage.getItem("spot-tts")==="1"}catch(e){}
+function speak(t){if(!window.speechSynthesis||!t)return;try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(String(t).replace(/\s+/g," ").trim().slice(0,700));u.lang="id-ID";u.rate=.95;var vs=speechSynthesis.getVoices(),v=vs.filter(function(x){return/^id/i.test(x.lang)})[0];if(v)u.voice=v;speechSynthesis.speak(u)}catch(e){}}
+function ttsSet(on,say){TTS=on;var b=document.getElementById("tts");b.setAttribute("aria-pressed",on?"true":"false");b.setAttribute("aria-label",on?"Matikan suara":"Aktifkan suara: teks dibacakan saat disentuh");try{localStorage.setItem("spot-tts",on?"1":"0")}catch(e){}
+ if(!on&&window.speechSynthesis)speechSynthesis.cancel();if(on&&say)speak("Suara aktif. Sentuh teks mana saja untuk mendengarkannya.")}
+function ttsText(t){var f=t.closest("input,select,textarea");if(f){var lb=f.id&&document.querySelector('label[for="'+f.id+'"]');var v=f.tagName==="SELECT"?(f.options[f.selectedIndex]||{}).text:f.value;return((lb?lb.textContent+". ":"")+(f.getAttribute("aria-label")||"")+" "+(v||f.placeholder||"")).trim()}
+ var e=t.closest("button,a,label,li,h1,h2,h3,p,figcaption,.stat,.brow,.arow,.post,.leaflet-popup-content,.msg,.net,.empty,.hint,.sub");return e?(e.getAttribute("aria-label")||e.innerText||e.textContent):""}
+document.getElementById("tts").addEventListener("click",function(){ttsSet(!TTS,true)});
+ttsSet(TTS,false);
+document.addEventListener("click",function(e){if(!TTS||e.target.closest("#tts"))return;speak(ttsText(e.target))},true);
+document.addEventListener("focusin",function(e){if(!TTS||e.target.closest("#tts"))return;if(e.target.matches("input,select,textarea"))speak(ttsText(e.target))});
 initMaps();render();pickRender();renderVault();
 document.getElementById("netRetry").addEventListener("click",function(){if(!ONLINE)return;loadReports().then(function(){render();pickRender()});loadVault().then(renderVault)});
 (function(){var l=document.getElementById("legNote"),f=document.getElementById("foot"),p=document.getElementById("phNote");
