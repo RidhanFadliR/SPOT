@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SPOT: Safe Places On Track</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400..800&display=swap">
+<style>
+/* SPOT: tampilan modern dan clean. Hijau untuk struktur, pink untuk aksen dan data. */
+:root{--bg:#FFF5F9;--surf:#FFFFFF;--ink:#14261F;--mut:#5E726A;--line:#F0DDE6;
+--green:#12A06E;--green-d:#0B7A4B;--green-soft:#DDF5EA;--pink:#EC4C93;--pink-d:#B0245F;--pink-soft:#FFE3EF;
+--acc:#12A06E;--acc-t:#FFFFFF;--btn-t:#FFFFFF;--grad:linear-gradient(135deg,#12A06E,#EC4C93);
+--map:#EEF7F2;--road:#FFFFFF;--park:#CFEBDD;--sea:#CFE8F3;
+--h1:#12A06E;--h2:#F472B6;--h3:#E11D74;--ok:#12A06E;--inp:#FFFFFF;
+--hbg:rgba(255,245,249,.86);--hbg2:rgba(255,245,249,.98);
+--t1:#0B7A4B;--t2:#EC4C93;--t3:#C2185B;--red:#D92D3F;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+:root[data-theme="dark"]{--bg:#0E1A16;--surf:#15241F;--ink:#EAF4EF;--mut:#8DA79C;--line:#243830;
+--green:#3DDC97;--green-d:#6EE7B7;--green-soft:rgba(61,220,151,.14);--pink:#FF8DC0;--pink-d:#FFB3D6;--pink-soft:rgba(255,141,192,.14);
+--acc:#3DDC97;--acc-t:#06281B;--btn-t:#06281B;--map:#122B23;--road:#1F3D33;--park:#1A4A38;--sea:#1B4F66;
+--h1:#3DDC97;--h2:#FF8DC0;--h3:#FF4F9A;--ok:#3DDC97;--inp:#101D19;
+--hbg:rgba(14,26,22,.86);--hbg2:rgba(14,26,22,.98);
+--t1:#6EE7B7;--t2:#FF8DC0;--t3:#FF6FAE;--red:#E5384B;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px);color-scheme:light}
+body{margin:0;color:var(--ink);font:400 16px/1.65 "Plus Jakarta Sans",system-ui,sans-serif;background:var(--bg);min-height:100vh;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-weight:800;line-height:1.15;margin:0;letter-spacing:-.025em}
+.wrap{max-width:1280px;margin:0 auto}
+
+/* Header */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--hbg);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:12px 24px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--hbg2);z-index:30}
+header .wrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:space-between}
+.logo{color:var(--ink);display:flex;align-items:center;gap:8px;font:800 22px "Plus Jakarta Sans",system-ui,sans-serif;letter-spacing:-.03em}
+nav{display:flex;gap:4px;max-width:100%;overflow-x:auto;order:3;width:100%;justify-content:safe center}
+.sm{display:none}
+@media(min-width:680px){header .wrap{display:grid;grid-template-columns:auto 1fr auto}nav{order:0;width:auto;justify-self:center;min-width:0}nav button{padding:8px 11px;font-size:14px}.acts{justify-self:end}.lg{display:none}.sm{display:inline}}
+@media(min-width:960px){header .wrap{grid-template-columns:1fr auto 1fr}nav button{padding:8px 16px;font-size:14.5px}.lg{display:inline}.sm{display:none}}
+nav button{background:none;border:0;color:var(--mut);font:600 14.5px "Plus Jakarta Sans",system-ui,sans-serif;padding:8px 16px;cursor:pointer;border-radius:999px;white-space:nowrap;transition:background .15s,color .15s}
+nav button:hover{color:var(--ink);background:var(--green-soft)}
+nav button[aria-selected="true"]{background:var(--green-soft);color:var(--green-d)}
+.acts{display:flex;gap:8px;align-items:center}
+.tg{background:none;color:var(--ink);border:1px solid var(--line);cursor:pointer;width:38px;height:38px;padding:0;border-radius:999px;display:grid;place-items:center}
+.tg:hover{background:var(--green-soft)}
+.tg svg{width:20px;height:20px}
+.sos{background:var(--red);color:#fff;border:1px solid var(--red);cursor:pointer;font:600 14px "Plus Jakarta Sans",system-ui,sans-serif;padding:8px 16px;border-radius:999px;white-space:nowrap}
+.sos:hover{filter:brightness(1.08)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,svg:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+
+/* Halaman */
+main{padding:32px 24px 72px}
+section{display:none}section.on{display:block;animation:in .25s ease}
+@keyframes in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){section.on{animation:none}}
+.strip{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:28px}
+.eyebrow{display:flex;align-items:center;gap:8px;font:700 12px "Plus Jakarta Sans",system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--pink);margin-bottom:12px}
+.eyebrow::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--pink)}
+.strip h2{font-size:clamp(28px,4vw,42px);line-height:1.1;letter-spacing:-.03em;max-width:20ch;text-wrap:balance}
+mark{background:none;color:var(--pink)}
+.strip p{margin:12px 0 0;color:var(--mut);max-width:52ch}
+.grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:20px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+
+/* Kartu */
+.card{background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:24px}
+.card h2{font-size:20px;margin-bottom:6px}
+.sub{color:var(--mut);margin:0 0 18px;font-size:14.5px}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.mapbox{border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--map)}
+.mapbox>svg{display:block;width:100%;height:auto}
+.legend{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--mut);margin-top:14px;flex-wrap:wrap}
+.bar{height:8px;width:120px;border-radius:5px;background:linear-gradient(90deg,var(--h1),var(--h2),var(--h3))}
+
+/* Angka ringkas */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.stats .card{padding:16px 18px}
+.stat b{display:block;font:800 32px "Plus Jakarta Sans",system-ui,sans-serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1;margin-bottom:4px}
+.stats .card:nth-child(1) b{color:var(--t1)}.stats .card:nth-child(2) b{color:var(--t2)}.stats .card:nth-child(3) b{color:var(--t3)}
+.stat span{font-size:12.5px;color:var(--mut);line-height:1.35;display:block}
+.list{list-style:none;margin:0;padding:0;max-height:440px;overflow:auto}
+.list li{padding:12px 0;border-top:1px solid var(--line);font-size:14.5px}
+.list li:first-child{border-top:0}
+.tag{display:inline-block;font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--pink-soft);color:var(--pink-d);margin-right:6px}
+:root[data-theme="dark"] .tag{color:var(--pink)}
+
+/* Form dan tombol */
+label{display:block;font-weight:600;font-size:14px;margin:16px 0 6px}
+select,input[type=text],textarea{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--inp);color:var(--ink);font:inherit;transition:border-color .15s,box-shadow .15s}
+select:focus,input[type=text]:focus,textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft);outline:none}
+.filters select{width:auto;min-width:160px;border-radius:999px;padding:9px 16px}
+.btn{background:var(--green);color:var(--btn-t);border:0;border-radius:12px;padding:13px 22px;font:700 15.5px "Plus Jakarta Sans",system-ui,sans-serif;cursor:pointer;transition:filter .15s,transform .15s}
+.btn:hover{filter:brightness(1.07);transform:translateY(-1px)}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line)}
+.btn.ghost:hover{filter:none;transform:none;background:var(--green-soft);border-color:var(--green)}
+.hint{font-size:13.5px;color:var(--mut)}
+.msg{margin-top:14px;padding:14px;border-radius:12px;background:var(--green-soft);border-left:4px solid var(--ok);display:none}
+.msg.err{border-color:var(--h3);background:var(--pink-soft)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.row,.stats{grid-template-columns:1fr}.card{padding:20px}}
+.chip{display:flex;gap:8px;align-items:flex-start;font-size:14px;margin-top:12px}
+.chip input{margin-top:4px;accent-color:var(--green)}
+input[type=file]{width:100%;padding:12px;border:1px dashed var(--line);border-radius:12px;background:var(--inp);color:var(--mut);font:inherit}
+.cp{padding:4px 12px;font-size:13px;margin-left:6px;border-radius:999px}
+
+/* Statistik */
+.brow{display:grid;grid-template-columns:130px 1fr 52px;gap:10px;align-items:center;margin:12px 0;font-size:14px}
+.brow b{font-variant-numeric:tabular-nums}
+.track{background:var(--bg);border-radius:999px;height:10px;overflow:hidden}
+.fill{height:100%;background:var(--green);border-radius:999px}
+.big{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.big .card{background:var(--bg)}
+.big .card b{font:800 40px "Plus Jakarta Sans",system-ui,sans-serif;color:var(--t1);display:block;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1;margin-bottom:6px}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.ph{margin:0}.ph img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px;display:block}.ph figcaption{font-size:12.5px;color:var(--mut);margin-top:6px}
+
+/* Bantuan dan forum */
+.help a{color:var(--green-d);font-weight:600}
+.help li{margin-bottom:8px}
+.post{background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:14px}
+.post p{margin:12px 0}
+.cwb{margin:12px 0;padding:14px;border-radius:12px;background:var(--bg);color:var(--mut);font-size:14px}
+.pact{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pact .cp{margin-left:0}
+.rep{margin:12px 0 0;padding:4px 0 4px 14px;border-left:3px solid var(--green-soft);font-size:14px;color:var(--mut)}
+.rf{display:flex;gap:8px;margin-top:14px;align-items:center}
+.rf input{flex:1;min-width:0}
+.rf .cp{margin-left:0}
+footer{max-width:1280px;margin:0 auto;padding:20px 24px 32px;color:var(--mut);font-size:13px;border-top:1px solid var(--line)}
+/* ===== Tata letak lebih lega dan seimbang ===== */
+.hero{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:center;gap:40px;margin-bottom:32px}
+.hero .stats{margin:0;gap:14px}
+.hero .stats .card{padding:22px 20px}
+.hero .stat b{font-size:42px}
+.hero .stat span{font-size:13.5px}
+.hero-cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
+@media(max-width:900px){.hero{grid-template-columns:1fr;gap:24px}}
+@media(max-width:520px){.hero .stats{grid-template-columns:repeat(3,1fr);gap:8px}.hero .stats .card{padding:12px}.hero .stat b{font-size:26px}.hero .stat span{font-size:12px}}
+@media(min-width:1100px){.grid{gap:24px}}
+/* ===== Perapian ===== */
+footer{width:calc(100% - 48px);padding:20px 0 32px}
+.card h2,.card h3{font-size:20px;margin-bottom:6px;line-height:1.2}
+.gal .hint{grid-column:1/-1;margin:0}
+#rEnv{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px}
+#rEnv .chip{margin-top:0!important}
+@media(max-width:520px){#rEnv{grid-template-columns:1fr}}
+input[type=file]::file-selector-button{margin-right:12px;padding:8px 14px;border:0;border-radius:999px;background:var(--green-soft);color:var(--green-d);font:600 13.5px "Plus Jakarta Sans",system-ui,sans-serif;cursor:pointer}
+.rules ul{margin:10px 0 0;padding-left:20px}
+.rules li{margin-bottom:6px;color:var(--mut)}
+@media(min-width:821px){
+#lapor .grid>.card:last-child,#vform{position:sticky;top:88px;align-self:start}
+#peta .grid>div:last-child{display:flex}
+#peta .grid>div:last-child>.card{flex:1;display:flex;flex-direction:column;min-height:0}
+#peta .list{flex:1;max-height:none;min-height:0}
+}
+/* ===== Banner galat, keadaan kosong, kolom sejajar ===== */
+.net{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 20px;padding:12px 16px;border-radius:14px;background:var(--pink-soft);border:1px solid var(--line);color:var(--ink);font-size:14px;line-height:1.5}
+.net[hidden]{display:none}
+.net .cp{margin:0;flex:none}
+.empty{display:flex;flex-direction:column;gap:4px;padding:32px 24px;border:1px dashed var(--line);border-radius:16px;text-align:center;color:var(--mut);background:var(--surf);font-size:14.5px}
+.empty b{color:var(--ink);font-size:16px}
+.hero{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:20px}
+@media(min-width:1100px){.hero{gap:24px}}
+@media(max-width:900px){.hero{grid-template-columns:1fr}}
+.hero .stat b{font-size:36px}
+.hero .stats .card{padding:20px 16px}
+@media(max-width:520px){.hero .stat b{font-size:26px}}
+/* ===== Peta sungguhan ===== */
+.lmap{height:420px;width:100%;background:var(--map);z-index:0}
+@media(max-width:520px){.lmap{height:340px}}
+.mapfind{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.mapfind input{flex:1;min-width:140px;padding:9px 14px;border-radius:999px}
+.mapfind .cp{margin:0;padding:9px 16px}
+.leaflet-container{font:inherit;color:#14261F}
+.mapbox .leaflet-attribution-flag{display:inline!important;width:1em!important;height:.67em!important}
+.leaflet-popup-content{font-size:13.5px;line-height:1.45}
+.acwrap{position:relative}
+.ac{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:1000;margin:0;padding:6px;list-style:none;background:var(--surf);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 30px rgba(20,38,31,.14);max-height:260px;overflow:auto}
+.ac[hidden]{display:none}
+.ac li{padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.4;cursor:pointer}
+.ac li:hover,.ac li:focus{background:var(--green-soft);outline:none}
+.ac li.none{color:var(--mut);cursor:default}
+.ac li.none:hover{background:none}
+.mapfind{align-items:center}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+ <div class="logo"><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z" fill="#3DDC97"/><circle cx="12" cy="9" r="2.8" fill="#FFF0F7"/></svg><span>SPOT</span></div>
+ <nav role="tablist" aria-label="Menu utama">
+  <button role="tab" aria-selected="true" data-t="peta">Peta kerawanan</button>
+  <button role="tab" aria-selected="false" data-t="lapor">Buat laporan</button>
+  <button role="tab" aria-selected="false" data-t="dok">Statistik</button>
+  <button role="tab" aria-selected="false" data-t="vault">Not My Vault</button>
+  <button role="tab" aria-selected="false" data-t="bantuan">Bantuan</button>
+ </nav>
+ <div class="acts"><button class="tg" id="tg" type="button" aria-label="Ganti ke mode terang" title="Ganti mode terang atau gelap"></button><button class="sos" id="sos" type="button"><span class="lg">Butuh bantuan?</span><span class="sm">Darurat</span></button></div>
+</div></header>
+
+<main><div class="wrap">
+<div class="net" id="net" role="status" hidden><span id="netTxt"></span><button class="btn ghost cp" id="netRetry" type="button">Coba lagi</button></div>
+
+<section id="peta" class="on">
+ <div class="strip hero">
+  <div class="hero-text"><span class="eyebrow">Peta kerawanan komunitas</span><h2>Bukan soal pakaian. Ini soal <mark>tempat yang tidak aman.</mark></h2><p>Peta panas dari laporan anonim. Makin pink, makin sering terjadi.</p><div class="hero-cta"><button class="btn" type="button" data-go="lapor">Buat laporan anonim</button><button class="btn ghost" type="button" data-go="bantuan">Cari bantuan</button></div></div>
+<div class="stats">
+ <div class="card stat"><b id="sTot">0</b><span>laporan tampil</span></div>
+ <div class="card stat"><b id="sHot">0</b><span>area rawan</span></div>
+ <div class="card stat"><b id="sNight">0%</b><span>terjadi malam hari</span></div>
+</div>
+ </div>
+ <div class="grid">
+  <div class="card">
+   <h2>Peta panas kerawanan</h2>
+   <p class="sub">Makin pink, makin sering ada laporan di area itu. Ketuk titik untuk melihat rinciannya.</p>
+   <div class="filters">
+    <select id="fType" aria-label="Filter jenis kejadian"><option value="">Semua jenis</option></select>
+    <select id="fTime" aria-label="Filter waktu"><option value="">Semua waktu</option></select>
+   </div>
+   <div class="mapbox"><div id="map" class="lmap" role="region" aria-label="Peta kerawanan"></div></div>
+   <div class="legend"><span>Jarang</span><span class="bar"></span><span>Sering</span><span id="legNote">· Titik contoh di peta ini hanya simulasi.</span></div>
+  </div>
+  <div>
+   <div class="card">
+    <h3>Laporan terbaru</h3>
+    <ul class="list" id="feed"></ul>
+   </div>
+  </div>
+ </div>
+</section>
+
+<section id="lapor">
+ <div class="grid">
+  <form class="card" id="form" novalidate>
+   <h2>Laporkan kejadian</h2>
+   <p class="sub">Tanpa nama dan tanpa akun. Kamu menentukan sendiri apa yang dibagikan. Menyalahkan korban tidak pernah dibenarkan.</p>
+   <div class="row">
+    <div><label for="rType">Jenis kejadian</label><select id="rType"></select></div>
+    <div><label for="rTime">Waktu kejadian</label><select id="rTime"></select></div>
+   </div>
+   <label for="rPlace">Lokasi</label>
+   <div class="acwrap"><input type="text" id="rPlace" autocomplete="off" placeholder="Ketik nama jalan atau tempat, peta akan mengikuti"><ul class="ac" id="ac" hidden></ul></div>
+   <label for="rEnv">Kondisi sekitar (boleh pilih lebih dari satu)</label>
+   <div id="rEnv"></div>
+   <div class="chip" style="background:var(--bg);padding:12px;border-radius:8px">
+    <input type="checkbox" id="fabOn"><label for="fabOn" style="margin:0;font-weight:500"><b>Fabric of Truth (opsional).</b> Catat pakaian saat kejadian. Hanya dihitung gabungan untuk membuktikan bahwa pakaian bukan penyebab.</label>
+   </div>
+   <div id="fabBox" style="display:none"><label for="rFab">Pakaian saat kejadian</label><select id="rFab"></select></div>
+   <label for="rNote">Cerita singkat (opsional)</label>
+   <textarea id="rNote" rows="3" maxlength="300" placeholder="Tidak perlu menyebut nama siapa pun."></textarea>
+   <label for="rPhoto">Foto bukti pendukung (opsional)</label>
+   <input type="file" id="rPhoto" accept="image/*">
+   <p class="hint" style="margin:6px 0 0">Boleh dikosongkan, laporan tanpa foto tetap terkirim. Pilih foto kondisi lokasi (jalan gelap, tanpa CCTV), hindari wajah orang. Data lokasi di dalam foto dihapus otomatis.<span id="phNote"></span></p>
+   <div id="prev"></div>
+   <p style="margin-top:16px"><button class="btn" type="submit">Kirim laporan anonim</button></p>
+   <div class="msg" id="msg" role="status"></div>
+  </form>
+  <div class="card">
+   <h3>Pilih lokasi di peta</h3>
+   <p class="sub">Cari tempat, pakai lokasi saya, atau ketuk peta. Pin hijau menandai titik kejadian.</p>
+   <div class="mapfind"><button class="btn ghost cp" type="button" id="mGps">Pakai lokasi saya</button><span class="hint" style="margin:0">atau ketik di kolom Lokasi, atau ketuk peta</span></div>
+   <div class="mapbox"><div id="pick" class="lmap" role="region" aria-label="Peta untuk memilih lokasi"></div></div>
+   <p class="hint" style="margin-bottom:0">Kalau kamu dalam bahaya sekarang, jangan mengisi formulir. Hubungi 129 atau 112.</p>
+  </div>
+ </div>
+</section>
+
+<section id="dok">
+ <div class="card" style="margin-bottom:20px">
+  <h2>Statistik: yang dibuktikan data</h2>
+  <p class="sub">Hasil survei daring penyusun SPOT terhadap 100 responden (PSN ke-9 2026).</p>
+  <div class="big">
+   <div class="card"><b>42,2%</b>korban memakai pakaian tertutup, berhijab, atau seragam sekolah</div>
+   <div class="card"><b>92,6%</b>pelaku adalah laki-laki</div>
+   <div class="card"><b>78,2%</b>pernah menyaksikan pelecehan langsung di ruang publik</div>
+   <div class="card"><b>39,1%</b>pernah mengalami kekerasan seksual selain catcalling</div>
+  </div>
+ </div>
+ <div class="grid">
+  <div class="card">
+   <h2>Fabric of Truth: pakaian saat kejadian</h2>
+   <p class="sub">Gabungan dari laporan di SPOT yang memilih mencatatnya.</p>
+   <div id="fabBars"></div>
+   <p class="hint" id="fabNote"></p>
+  </div>
+  <div class="card">
+   <h2>Jenis kejadian</h2>
+   <p class="sub">Sebaran semua laporan.</p>
+   <div id="typeBars"></div>
+  </div>
+ </div>
+ <div class="card" style="margin-top:20px">
+  <h2>Foto bukti pendukung</h2>
+  <p class="sub">Dikirim pelapor secara opsional. Laporan tanpa foto tetap dihitung.</p>
+  <div class="gal" id="gal"></div>
+ </div>
+ <div class="card" style="margin-top:20px">
+  <h2>Dari data ke tindakan</h2>
+  <p class="sub">Peta panas dipakai untuk mendesak perbaikan nyata di area rawan.</p>
+  <div id="advice"></div>
+  <p><button class="btn ghost" id="print">Cetak ringkasan untuk advokasi</button></p>
+ </div>
+</section>
+
+<section id="vault">
+ <div class="strip hero"><div class="hero-text"><span class="eyebrow">Forum berbagi anonim</span><h2>Not My Vault: cerita ini <mark>bukan rahasia</mark> yang harus kamu simpan sendiri.</h2><p>Forum anonim untuk bercerita, saling menguatkan, dan berbagi tips keselamatan. Tanpa nama, tanpa akun.</p></div><div class="card rules"><h3>Aturan ruang ini</h3><ul><li>Percayai penyintas.</li><li>Jangan tanya soal pakaian atau alasan korban ada di sana.</li><li>Jangan menyalahkan korban.</li></ul></div></div>
+ <div class="grid">
+  <div id="vfeed" aria-live="polite"></div>
+  <form class="card" id="vform" novalidate style="align-self:start">
+   <h2>Bagikan ceritamu</h2>
+   <p class="sub">Kamu menentukan sendiri apa yang dibagikan. Jangan menulis nama, nomor telepon, atau alamat siapa pun.</p>
+   <label for="vC">Kategori</label>
+   <select id="vC"><option value="Cerita">Cerita saya</option><option value="Dukungan">Butuh dukungan atau saran</option><option value="Tips">Tips keselamatan</option></select>
+   <label for="vT">Isi</label>
+   <textarea id="vT" rows="5" maxlength="500" placeholder="Tulis dengan caramu sendiri. Ini bukan salahmu."></textarea>
+   <div class="chip"><input type="checkbox" id="vCW" checked><label for="vCW" style="margin:0;font-weight:400">Beri peringatan konten agar pembaca bisa memilih untuk membuka atau tidak.</label></div>
+   <p style="margin-top:16px"><button class="btn" type="submit">Bagikan secara anonim</button></p>
+   <div class="msg" id="vMsg" role="status"></div>
+   <p class="hint">Kalau kamu dalam bahaya sekarang, hubungi 112.</p>
+  </form>
+ </div>
+</section>
+
+<section id="bantuan">
+ <div class="grid">
+  <div class="card help">
+   <h2>Kamu tidak salah</h2>
+   <p>Kekerasan seksual berpangkal pada niat pelaku, bukan pada pakaian, waktu, atau tempat korban berada. UU No. 12 Tahun 2022 tentang TPKS melindungi hak korban.</p>
+   <p><b>Layanan pengaduan:</b></p>
+   <ul>
+    <li><a href="https://wa.me/6281949904987" target="_blank" rel="noopener">Narahubung SAPA SPOT</a></li>
+    <li>Darurat: <b>112</b> <button type="button" class="btn ghost cp" data-n="112">Salin nomor</button></li>
+    <li>Komnas Perempuan: <a href="https://komnasperempuan.go.id" target="_blank" rel="noopener">komnasperempuan.go.id</a></li>
+   </ul>
+   <p class="hint">Periksa nomor dan kanal terbaru di situs resmi sebelum diumumkan ke publik.</p>
+  </div>
+  <div class="card">
+   <h2>Jika temanmu bercerita</h2>
+   <ul>
+    <li>Dengarkan dulu. Percayai ceritanya.</li>
+    <li>Jangan tanya soal pakaian atau kenapa ada di sana.</li>
+    <li>Tanyakan apa yang ia butuhkan, jangan memaksa melapor.</li>
+    <li>Kalau melihat kejadian, ganggu situasinya: dekati korban, ajak bicara, panggil orang lain.</li>
+   </ul>
+  </div>
+ </div>
+</section>
+
+</div></main>
+<footer id="foot">SPOT adalah prototipe gagasan untuk PSN ke-9 2026. Titik pada peta berupa contoh simulasi, bukan kejadian nyata. Laporan dan cerita yang kamu kirim di halaman ini hanya tersimpan di perangkatmu.</footer>
+
+<script>
+var TYPES=["Catcalling","Penguntitan","Foto tanpa izin","Kontak fisik"];
+var TIMES=["Pagi","Siang","Sore","Malam"];
+var FABS=["Tertutup / berhijab","Seragam sekolah","Kasual","Terbuka"];
+var ENVS=["Penerangan minim","Area sepi","Tanpa CCTV","Ramai tapi tidak ada yang menolong"];
+// Jalan, taman, dan titik simulasi
+var ROADS=[[0,90,600,90],[0,230,600,230],[0,340,600,340],[110,0,110,400],[300,0,300,400],[480,0,480,400]];
+var C0=[-6.2088,106.8456];
+var seed=[
+[118,92,0,3,1,"Penerangan minim"],
+[125,100,1,3,1,"Area sepi"],
+[300,232,0,1,2,""],
+[310,225,2,2,2,"Ramai tapi tidak ada yang menolong"],
+[302,240,3,2,2,""],
+[118,235,0,3,0,"Penerangan minim"],
+[112,228,1,3,3,"Tanpa CCTV"],
+[122,240,0,3,1,""],
+[482,342,0,0,1,""],
+[478,335,3,3,2,"Area sepi"],
+[300,92,0,1,0,""],
+[296,88,2,1,2,""],
+[480,95,1,3,1,"Tanpa CCTV"],
+[300,338,0,2,1,""],
+[121,96,3,3,1,"Area sepi"],
+[485,232,0,0,0,""]
+].map(function(a,i){return{x:a[0],y:a[1],t:TYPES[a[2]],w:TIMES[a[3]],f:FABS[a[4]],place:"Titik contoh "+(i+1),note:a[5],env:a[5]?[a[5]]:[],lat:C0[0]+(200-a[1])*0.00032,lng:C0[1]+(a[0]-300)*0.00032}});
+// ====== PENGATURAN BACKEND (Supabase) ======
+// Isi dua nilai ini dari Supabase: Project Settings > API (Project URL dan anon public key).
+// Jika dikosongkan, SPOT berjalan dalam mode demo dan menyimpan data hanya di perangkat.
+var SB_URL="https://cwvbqxnchyjkkjfxskwl.supabase.co";
+var SB_KEY="sb_publishable_-Cv-0ujQdtKy-azVQIEWqg_0JkXMuRm";
+var ONLINE=!!(SB_URL&&SB_KEY);
+// Penanda perangkat acak (bukan identitas). Dipakai agar satu perangkat hanya satu reaksi per cerita.
+var DEV=null;try{DEV=localStorage.getItem("spot-dev");if(!DEV){DEV=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():("d"+Date.now()+Math.random().toString(16).slice(2));localStorage.setItem("spot-dev",DEV)}}catch(e){}
+if(!DEV)DEV="d"+Date.now()+Math.random().toString(16).slice(2);
+function sb(path,o){o=o||{};var h={apikey:SB_KEY};if(SB_KEY.indexOf("eyJ")===0)h.Authorization="Bearer "+SB_KEY;if(o.body)h["Content-Type"]="application/json";if(o.prefer)h.Prefer=o.prefer;
+ return fetch(SB_URL.replace(/\/$/,"")+"/rest/v1/"+path,{method:o.method||"GET",headers:h,body:o.body?JSON.stringify(o.body):undefined}).then(function(r){
+  if(!r.ok)return r.text().then(function(t){var e=new Error(t||r.statusText);e.status=r.status;throw e});
+  return r.status===204?null:r.text().then(function(t){return t?JSON.parse(t):null})})}
+function errInfo(e){var m=(e&&e.message)||"";try{var j=JSON.parse(m);m=j.message||j.hint||m}catch(x){}return "("+(e&&e.status?e.status+": ":"")+String(m).slice(0,160)+")"}
+function LOADMSG(e){return "Data belum bisa dimuat dari server "+errInfo(e)+". Periksa koneksi internet atau buka halaman ini langsung di browser, lalu klik Coba lagi."}
+var NETS={};
+function setNet(k,m){NETS[k]=m;var seen={},t=Object.keys(NETS).map(function(x){return NETS[x]}).filter(function(x){if(!x||seen[x])return false;seen[x]=1;return true}).join(" ");var n=document.getElementById("net"),tx=document.getElementById("netTxt");if(n&&tx){tx.textContent=t;n.hidden=!t}}
+var store=[];var photos=[];var loadFail=false,vfail=false;
+if(!ONLINE){try{var s=localStorage.getItem("spot-reports");if(s)store=JSON.parse(s)}catch(e){}}
+var all=function(){return ONLINE?store:seed.concat(store)};
+function loadReports(){if(!ONLINE)return Promise.resolve();
+ return sb("public_reports?select=id,lat,lng,t,w,f,place,note,env&order=created_at.asc&limit=1000").then(function(rows){store=(rows||[]).map(function(r){r.env=r.env||[];r.note=r.note||"";return r});loadFail=false;setNet("r","")},function(e){loadFail=true;setNet("r",LOADMSG(e))})
+ .then(function(){return sb("approved_photos?select=id,t,w,place,photo&order=created_at.desc&limit=24")}).then(function(rows){photos=rows||[]},function(){photos=[]})}
+var NS="http://www.w3.org/2000/svg";
+function el(n,a,p){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e}
+function tx(svg,x,y,s,z,it){var t=el("text",{x:x,y:y,fill:"var(--mut)","font-size":z||11,"font-style":it?"italic":"normal","text-anchor":"middle"},svg);t.textContent=s}
+function fill(sel,arr,first){var s=document.getElementById(sel);if(first&&!s.options.length){}arr.forEach(function(v){var o=document.createElement("option");o.value=v;o.textContent=v;s.appendChild(o)})}
+fill("fType",TYPES);fill("fTime",TIMES);fill("rType",TYPES);fill("rTime",TIMES);fill("rFab",FABS);
+var envBox=document.getElementById("rEnv");
+ENVS.forEach(function(v,i){var d=document.createElement("div");d.className="chip";d.style.marginTop="6px";d.innerHTML='<input type="checkbox" id="e'+i+'" value="'+v+'"><label for="e'+i+'" style="margin:0;font-weight:400">'+v+'</label>';envBox.appendChild(d)});
+var info=null;
+function filtered(){var t=document.getElementById("fType").value,w=document.getElementById("fTime").value;return all().filter(function(r){return(!t||r.t===t)&&(!w||r.w===w)})}
+var LM=null,LP=null,layer=null,pl=null,pinMk=null,pin=null,fitted=false;
+function mapOK(){return !!window.L}
+var TLS=[];
+function tiles(m){TLS.push({m:m,ls:[]});applyTiles()}
+function applyTiles(){var E="https://server.arcgisonline.com/ArcGIS/rest/services/",at="Tiles &copy; Esri, OpenStreetMap contributors";
+ TLS.forEach(function(t){t.ls.forEach(function(l){t.m.removeLayer(l)});t.ls=[];
+  if(TH==="dark"){t.ls.push(L.tileLayer(E+"Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,maxNativeZoom:16,attribution:at}).addTo(t.m));
+   t.ls.push(L.tileLayer(E+"Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,maxNativeZoom:16}).addTo(t.m))}
+  else t.ls.push(L.tileLayer(E+"World_Street_Map/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,maxNativeZoom:19,attribution:at}).addTo(t.m))})}
+function initMaps(){
+ if(!mapOK()){["map","pick"].forEach(function(i){var e=document.getElementById(i);e.innerHTML='<p class="hint" style="padding:24px">Peta belum bisa dimuat. Periksa koneksi internet lalu muat ulang halaman.</p>'});return}
+ LM=L.map("map",{scrollWheelZoom:false,zoomAnimation:false}).setView(C0,13);tiles(LM);layer=L.layerGroup().addTo(LM);
+ LP=L.map("pick",{zoomAnimation:false}).setView(C0,13);tiles(LP);pl=L.layerGroup().addTo(LP);
+ LP.on("click",function(e){setPin(e.latlng.lat,e.latlng.lng,true)});
+ var fix=function(){LM.invalidateSize();LP.invalidateSize()};
+ document.querySelectorAll("nav button").forEach(function(b){b.addEventListener("click",function(){setTimeout(fix,60);setTimeout(fix,450)})});
+ if(window.ResizeObserver){var ro=new ResizeObserver(function(){fix()});ro.observe(document.getElementById("map"));ro.observe(document.getElementById("pick"))}
+ window.addEventListener("resize",fix)}
+function setPin(lat,lng,rev){pin={lat:Math.round(lat*10000)/10000,lng:Math.round(lng*10000)/10000};
+ var p=document.getElementById("rPlace");
+ if(rev&&(!p.value||p.dataset.auto==="1")){p.value="Titik di peta ("+pin.lat+", "+pin.lng+")";p.dataset.auto="1";
+  fetch("https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&lat="+pin.lat+"&lon="+pin.lng).then(function(r){return r.json()}).then(function(j){if(p.dataset.auto==="1"&&j&&j.display_name)p.value=j.display_name.split(",").slice(0,3).join(",").slice(0,120)}).catch(function(){})}
+ pickRender()}
+function goTo(lat,lng){if(LP){LP.setView([lat,lng],16)}}
+function pickRender(){if(!LP)return;pl.clearLayers();
+ all().forEach(function(r){if(r.lat!=null)L.circleMarker([r.lat,r.lng],{radius:4,color:"#E11D74",weight:0,fillOpacity:.6,interactive:false}).addTo(pl)});
+ if(pin)L.circleMarker([pin.lat,pin.lng],{radius:11,color:"#fff",weight:3,fillColor:"#12A06E",fillOpacity:1}).addTo(pl)}
+function render(){
+ var d=filtered().filter(function(r){return r.lat!=null});
+ if(LM){layer.clearLayers();
+  d.forEach(function(r){L.circleMarker([r.lat,r.lng],{radius:30,stroke:false,fillColor:"#E11D74",fillOpacity:.16,interactive:false}).addTo(layer)});
+  d.forEach(function(r){var c=L.circleMarker([r.lat,r.lng],{radius:7,color:"#fff",weight:2.5,fillColor:"#14261F",fillOpacity:1}).addTo(layer);
+   var box=document.createElement("div"),b=document.createElement("b");b.textContent=r.t+" · "+r.w;box.appendChild(b);box.appendChild(document.createElement("br"));box.appendChild(document.createTextNode(r.note||r.place));c.bindPopup(box)});
+  if(!fitted&&ONLINE&&d.length){fitted=true;LM.fitBounds(L.latLngBounds(d.map(function(r){return[r.lat,r.lng]})),{padding:[40,40],maxZoom:16})}}
+ document.getElementById("sTot").textContent=d.length;
+ var cells={};d.forEach(function(r){var k=Math.round(r.lat/0.006)+"-"+Math.round(r.lng/0.006);cells[k]=(cells[k]||0)+1});
+ document.getElementById("sHot").textContent=Object.keys(cells).filter(function(k){return cells[k]>=3}).length;
+ var n=d.filter(function(r){return r.w==="Malam"}).length;
+ document.getElementById("sNight").textContent=d.length?Math.round(n*100/d.length)+"%":"0%";
+ var f=document.getElementById("feed");f.innerHTML="";
+ if(!d.length){f.innerHTML="<li>"+(loadFail?"Laporan belum bisa dimuat dari server. Klik Coba lagi di bagian atas halaman.":(ONLINE&&!store.length?"Belum ada laporan. Buat laporan pertama lewat tab Buat laporan.":"Belum ada laporan untuk filter ini. Ubah filter atau buat laporan."))+"</li>"}
+ d.slice().reverse().slice(0,12).forEach(function(r){var li=document.createElement("li");var t=document.createElement("span");t.className="tag";t.textContent=r.t;li.appendChild(t);li.appendChild(document.createTextNode(r.w+" di "+r.place+(r.env.length?" ("+r.env.join(", ")+")":"")));f.appendChild(li)});
+ bars();
+}
+["fType","fTime"].forEach(function(i){document.getElementById(i).addEventListener("change",render)});
+// Pemilih lokasi
+document.getElementById("rPlace").addEventListener("input",function(){this.dataset.auto="0"});
+document.getElementById("mGps").addEventListener("click",function(){if(!navigator.geolocation||!LP)return;navigator.geolocation.getCurrentPosition(function(g){goTo(g.coords.latitude,g.coords.longitude);setPin(g.coords.latitude,g.coords.longitude,true)},function(){alert("Lokasi tidak bisa dibaca. Izinkan akses lokasi atau cari nama tempat.")},{timeout:10000})});
+var acT=null,acSeq=0;
+function acHide(){var u=document.getElementById("ac");u.hidden=true;u.innerHTML=""}
+function acRun(q){var my=++acSeq;
+ fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=id&accept-language=id&q="+encodeURIComponent(q)).then(function(r){return r.json()}).then(function(j){
+  if(my!==acSeq)return;var u=document.getElementById("ac");u.innerHTML="";
+  if(!j||!j.length){var li=document.createElement("li");li.className="none";li.textContent="Tempat tidak ditemukan. Ketuk peta untuk memilih manual.";u.appendChild(li);u.hidden=false;return}
+  j.forEach(function(x){var li=document.createElement("li");li.tabIndex=0;li.textContent=x.display_name;
+   var pick=function(){var p=document.getElementById("rPlace");p.value=x.display_name.split(",").slice(0,3).join(",").slice(0,120);p.dataset.auto="0";goTo(parseFloat(x.lat),parseFloat(x.lon));setPin(parseFloat(x.lat),parseFloat(x.lon),false);acHide()};
+   li.addEventListener("click",pick);li.addEventListener("keydown",function(e){if(e.key==="Enter")pick()});u.appendChild(li)});
+  u.hidden=false}).catch(function(){})}
+(function(){var p=document.getElementById("rPlace");
+ p.addEventListener("input",function(){clearTimeout(acT);var q=p.value.trim();if(q.length<3){acHide();return}acT=setTimeout(function(){acRun(q)},700)});
+ p.addEventListener("keydown",function(e){if(e.key==="Enter"){var f=document.querySelector("#ac li[tabindex]");if(f&&!document.getElementById("ac").hidden){e.preventDefault();f.click()}else if(p.value.trim().length>=3){e.preventDefault();acRun(p.value.trim())}}if(e.key==="Escape")acHide()});
+ document.addEventListener("click",function(e){if(!e.target.closest(".acwrap"))acHide()})})();
+document.getElementById("fabOn").addEventListener("change",function(){document.getElementById("fabBox").style.display=this.checked?"block":"none"});
+document.getElementById("form").addEventListener("submit",function(e){e.preventDefault();
+ var form=this,m=document.getElementById("msg"),btn=form.querySelector('button[type="submit"]');m.style.display="block";
+ if(!pin){m.className="msg err";m.textContent="Pilih lokasi dengan mengetuk peta dulu.";return}
+ var env=[];ENVS.forEach(function(v,i){if(document.getElementById("e"+i).checked)env.push(v)});
+ var ph=photoData||null;
+ var r={lat:pin.lat,lng:pin.lng,t:document.getElementById("rType").value,w:document.getElementById("rTime").value,
+  f:document.getElementById("fabOn").checked?document.getElementById("rFab").value:null,
+  place:(document.getElementById("rPlace").value||"Lokasi dipilih di peta").slice(0,120),note:document.getElementById("rNote").value.slice(0,300),env:env};
+ var done=function(){form.reset();photoData=null;document.getElementById("prev").innerHTML="";pin=null;document.getElementById("fabBox").style.display="none";pickRender();render();
+  m.className="msg";m.textContent="Laporan terkirim tanpa identitas dan sudah masuk ke peta. "+(ph&&ONLINE?"Fotomu tampil di galeri tab Statistik. ":"")+"Terima kasih sudah bersuara. Ini bukan salahmu."};
+ if(!ONLINE){r.photo=ph;store.push(r);try{localStorage.setItem("spot-reports",JSON.stringify(store))}catch(x){try{localStorage.setItem("spot-reports",JSON.stringify(store.map(function(q){var c={};for(var k in q)if(k!=="photo")c[k]=q[k];return c})))}catch(y){}}done();return}
+ btn.disabled=true;m.className="msg";m.textContent="Mengirim...";
+ sb("reports",{method:"POST",prefer:"return=minimal",body:{x:0,y:0,lat:r.lat,lng:r.lng,t:r.t,w:r.w,f:r.f,place:r.place,note:r.note,env:r.env,photo:ph}})
+  .then(function(){store.push(r);if(ph)photos.unshift({t:r.t,w:r.w,place:r.place,photo:ph});done()},function(){m.className="msg err";m.textContent="Laporan belum terkirim. Cek koneksi internet lalu coba lagi. Isianmu masih tersimpan di formulir."})
+  .then(function(){btn.disabled=false})});
+// Dokumentasi
+var photoData=null;
+document.getElementById("rPhoto").addEventListener("change",function(){var f=this.files[0],pv=document.getElementById("prev");photoData=null;pv.innerHTML="";if(!f)return;var rd=new FileReader();rd.onload=function(){var im=new Image();im.onload=function(){var c=document.createElement("canvas"),steps=[[800,.7],[640,.6],[520,.5],[400,.45]],k;for(k=0;k<steps.length;k++){var s=Math.min(1,steps[k][0]/Math.max(im.width,im.height));c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));c.getContext("2d").drawImage(im,0,0,c.width,c.height);photoData=c.toDataURL("image/jpeg",steps[k][1]);if(photoData.length<=280000)break}if(photoData.length>300000){photoData=null;pv.textContent="Foto terlalu besar untuk dikirim. Pilih foto lain atau kirim tanpa foto.";return}var i2=document.createElement("img");i2.src=photoData;i2.alt="Pratinjau foto";i2.style.cssText="max-width:160px;border-radius:10px;margin-top:8px";pv.appendChild(i2)};im.onerror=function(){pv.textContent="Foto tidak bisa dibaca. Laporan tetap bisa dikirim tanpa foto."};im.src=rd.result};rd.readAsDataURL(f)});
+function renderGal(){var g=document.getElementById("gal");g.innerHTML="";var ps=(ONLINE?photos.slice():all().filter(function(r){return r.photo}).reverse()).filter(function(r){return typeof r.photo==="string"&&r.photo.indexOf("data:image/jpeg;base64,")===0});if(!ps.length){g.innerHTML='<p class="hint">Belum ada foto bukti. Foto bersifat opsional saat membuat laporan.</p>';return}ps.forEach(function(r){var f=document.createElement("figure");f.className="ph";var im=document.createElement("img");im.src=r.photo;im.alt="Foto bukti: "+r.t;var c=document.createElement("figcaption");c.textContent=r.t+" · "+r.w+" · "+r.place;f.appendChild(im);f.appendChild(c);g.appendChild(f)})}
+function bars(){renderGal();
+ var d=all(),withF=d.filter(function(r){return r.f});
+ var fb=document.getElementById("fabBars");fb.innerHTML="";
+ FABS.forEach(function(k){var n=withF.filter(function(r){return r.f===k}).length,p=withF.length?Math.round(n*100/withF.length):0;
+  fb.insertAdjacentHTML("beforeend",'<div class="brow"><span>'+k+'</span><div class="track"><div class="fill" style="width:'+p+'%"></div></div><b>'+p+'%</b></div>')});
+ var cl=withF.filter(function(r){return r.f==="Tertutup / berhijab"||r.f==="Seragam sekolah"}).length;
+ document.getElementById("fabNote").textContent=withF.length?Math.round(cl*100/withF.length)+"% dari "+withF.length+" laporan terjadi saat korban berpakaian tertutup atau berseragam.":"Belum ada data pakaian.";
+ var tb=document.getElementById("typeBars");tb.innerHTML="";
+ TYPES.forEach(function(k){var n=d.filter(function(r){return r.t===k}).length,p=d.length?Math.round(n*100/d.length):0;
+  tb.insertAdjacentHTML("beforeend",'<div class="brow"><span>'+k+'</span><div class="track"><div class="fill" style="width:'+p+'%"></div></div><b>'+p+'%</b></div>')});
+ var env={};d.forEach(function(r){r.env.forEach(function(v){env[v]=(env[v]||0)+1})});
+ var rows=Object.keys(env).sort(function(a,b){return env[b]-env[a]}).slice(0,3);
+ var map={"Penerangan minim":"Tambah lampu jalan (Dinas PUPR).","Area sepi":"Tambah patroli dan aktivitas warga di area itu.","Tanpa CCTV":"Pasang CCTV (Dinas Perhubungan).","Ramai tapi tidak ada yang menolong":"Adakan pelatihan bystander intervention."};
+ document.getElementById("advice").innerHTML=rows.length?rows.map(function(k){return'<div class="brow" style="grid-template-columns:1fr"><span><b>'+k+'</b> ('+env[k]+' laporan): '+(map[k]||"")+'</span></div>'}).join(""):"Belum ada data kondisi sekitar."}
+document.getElementById("print").addEventListener("click",function(){try{window.print()}catch(e){alert("Cetak tidak tersedia di sini. Buka halaman ini di browser lalu tekan Ctrl+P.")}});
+// Not My Vault (forum berbagi)
+var VSEED=[
+{id:"s1",c:"Cerita",t:"Aku diikuti sampai depan kos sepulang les. Awalnya kupikir cuma perasaan. Setelah cerita ke teman, aku sadar itu bukan salahku.",cw:true,r:12,me:false,rep:["Aku percaya kamu. Terima kasih sudah berani cerita."]},
+{id:"s2",c:"Dukungan",t:"Temanku baru cerita dia dilecehkan di angkot. Aku harus bilang apa ke dia?",cw:false,r:7,me:false,rep:["Dengarkan dulu, percayai ceritanya, lalu tanyakan apa yang ia butuhkan."]},
+{id:"s3",c:"Tips",t:"Kalau pulang malam, bagikan lokasi langsung ke teman dan pilih jalan yang terang dan ramai. Cek peta panas SPOT dulu.",cw:false,r:19,me:false,rep:[]}
+];
+// Reaksi dan laporan yang sudah dibuat perangkat ini
+var MY={r:{},f:{}};try{var my=localStorage.getItem("spot-my");if(my)MY=JSON.parse(my)}catch(e){}
+MY.r=MY.r||{};MY.f=MY.f||{};
+function mysave(){try{localStorage.setItem("spot-my",JSON.stringify(MY))}catch(e){}}
+var vstore=null,vloaded=!ONLINE;
+if(ONLINE){vstore=[]}else{try{var vs=localStorage.getItem("spot-vault");if(vs)vstore=JSON.parse(vs)}catch(e){}if(!Array.isArray(vstore))vstore=JSON.parse(JSON.stringify(VSEED))}
+var BLAME=["salah kamu","salahmu","salah korban","kenapa pakai","kenapa kamu pakai","pakaianmu","pakaian kamu","gara-gara pakaian","menggoda","mengundang"];
+var revealed={};
+function blamey(s){s=s.toLowerCase();return BLAME.some(function(w){return s.indexOf(w)>-1})}
+function vsave(){if(ONLINE)return;try{localStorage.setItem("spot-vault",JSON.stringify(vstore))}catch(e){}}
+function mk(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt)e.textContent=txt;return e}
+function emptyBox(t,d){var b=mk("div","empty");b.appendChild(mk("b","",t));if(d)b.appendChild(mk("span","",d));return b}
+function vbtn(txt,fn){var b=mk("button","btn ghost cp",txt);b.type="button";b.addEventListener("click",fn);return b}
+function loadVault(){if(!ONLINE)return Promise.resolve();
+ return Promise.all([
+  sb("public_posts?select=id,c,t,cw&order=created_at.asc&limit=200"),
+  sb("public_replies?select=post_id,t&order=created_at.asc&limit=1000"),
+  sb("post_stats?select=post_id,reacts,flags&limit=1000")
+ ]).then(function(res){var reps={},st={};
+  (res[1]||[]).forEach(function(x){(reps[x.post_id]=reps[x.post_id]||[]).push(x.t)});
+  (res[2]||[]).forEach(function(x){st[x.post_id]=x});
+  vstore=(res[0]||[]).map(function(p){var s=st[p.id]||{};return{id:p.id,c:p.c,t:p.t,cw:p.cw,r:s.reacts||0,me:!!MY.r[p.id],rep:reps[p.id]||[],hide:!!MY.f[p.id]||(s.flags||0)>=3}});
+  vloaded=true;vfail=false;setNet("v","")
+ },function(e){vloaded=true;vfail=true;setNet("v",LOADMSG(e))})}
+function renderVault(){
+ var box=document.getElementById("vfeed");box.innerHTML="";
+ if(!vloaded){box.appendChild(emptyBox("Memuat cerita...",""));return}
+ if(vfail){box.appendChild(emptyBox("Cerita belum bisa dimuat","Periksa koneksi internet, lalu klik Coba lagi di bagian atas halaman."));return}
+ var list=vstore.filter(function(p){return!p.hide});
+ if(!list.length){box.appendChild(emptyBox("Belum ada cerita","Jadilah yang pertama berbagi. Ceritamu tidak memakai nama atau akun."));return}
+ list.slice().reverse().forEach(function(p){
+  var d=mk("article","post");d.appendChild(mk("span","tag",p.c));
+  if(p.cw&&!revealed[p.id]){var w=mk("div","cwb","Peringatan konten: cerita ini menyinggung kekerasan seksual. ");w.appendChild(vbtn("Tampilkan",function(){revealed[p.id]=1;renderVault()}));d.appendChild(w)}
+  else d.appendChild(mk("p","",p.t));
+  var a=mk("div","pact");
+  var rb=vbtn("Aku percaya kamu · "+p.r,function(){
+   if(!ONLINE){p.me=!p.me;p.r+=p.me?1:-1;vsave();renderVault();return}
+   if(p.me)return;
+   sb("reactions",{method:"POST",prefer:"return=minimal",body:{post_id:p.id,device:DEV}})
+    .then(function(){p.r++},function(e){if(e.status!==409)throw e})
+    .then(function(){p.me=true;MY.r[p.id]=1;mysave();renderVault()})
+    .catch(function(){setNet("v","Reaksi belum terkirim. Coba lagi.")})});
+  rb.setAttribute("aria-pressed",p.me?"true":"false");if(p.me)rb.style.borderColor="var(--h1)";a.appendChild(rb);
+  a.appendChild(vbtn("Laporkan",function(){
+   p.hide=true;
+   if(!ONLINE){vsave();renderVault();return}
+   MY.f[p.id]=1;mysave();renderVault();
+   sb("flags",{method:"POST",prefer:"return=minimal",body:{post_id:p.id,device:DEV}}).catch(function(){})}));
+  d.appendChild(a);
+  p.rep.forEach(function(t){d.appendChild(mk("div","rep",t))});
+  var f=mk("form","rf"),i=mk("input");i.type="text";i.maxLength=200;i.placeholder="Tulis balasan yang menguatkan";i.setAttribute("aria-label","Balasan");
+  var s=mk("button","btn ghost cp","Balas");s.type="submit";f.appendChild(i);f.appendChild(s);
+  var em=mk("div","hint");em.setAttribute("role","status");
+  f.addEventListener("submit",function(e){e.preventDefault();var v=i.value.trim();if(!v)return;
+   if(blamey(v)){em.textContent="Balasan yang menyalahkan korban tidak bisa dikirim. Coba tulis dengan dukungan.";return}
+   v=v.slice(0,200);
+   if(!ONLINE){p.rep.push(v);vsave();renderVault();return}
+   s.disabled=true;em.textContent="";
+   sb("replies",{method:"POST",prefer:"return=minimal",body:{post_id:p.id,t:v}})
+    .then(function(){p.rep.push(v);renderVault()},function(){s.disabled=false;em.textContent="Balasan belum terkirim. Coba lagi."})});
+  d.appendChild(f);d.appendChild(em);box.appendChild(d)})}
+document.getElementById("vform").addEventListener("submit",function(e){e.preventDefault();
+ var form=this,btn=form.querySelector('button[type="submit"]'),m=document.getElementById("vMsg"),t=document.getElementById("vT").value.trim();m.style.display="block";
+ if(t.length<10){m.className="msg err";m.textContent="Tulis minimal 10 karakter.";return}
+ if(blamey(t)){m.className="msg err";m.textContent="Tulisan yang menyalahkan korban tidak bisa dibagikan di sini. Kekerasan seksual selalu salah pelaku.";return}
+ var c=document.getElementById("vC").value,cw=document.getElementById("vCW").checked,ok="Ceritamu sudah dibagikan tanpa identitas. Terima kasih sudah bersuara.";
+ if(!ONLINE){vstore.push({id:"u"+Date.now(),c:c,t:t.slice(0,500),cw:cw,r:0,me:false,rep:[]});vsave();form.reset();renderVault();m.className="msg";m.textContent=ok;return}
+ btn.disabled=true;m.className="msg";m.textContent="Mengirim...";
+ sb("posts",{method:"POST",prefer:"return=minimal",body:{c:c,t:t.slice(0,500),cw:cw}})
+  .then(function(){form.reset();return loadVault()})
+  .then(function(){renderVault();m.className="msg";m.textContent=ok},function(){m.className="msg err";m.textContent="Cerita belum terkirim. Cek koneksi internet lalu coba lagi. Tulisanmu masih ada di formulir."})
+  .then(function(){btn.disabled=false})});
+// Tab
+var tabs=document.querySelectorAll("nav button");
+function go(id){tabs.forEach(function(b){b.setAttribute("aria-selected",b.dataset.t===id)});document.querySelectorAll("section").forEach(function(s){s.classList.toggle("on",s.id===id)});window.scrollTo(0,0)}
+tabs.forEach(function(b){b.addEventListener("click",function(){go(b.dataset.t)})});
+document.getElementById("sos").addEventListener("click",function(){go("bantuan")});
+document.querySelectorAll("[data-go]").forEach(function(b){b.addEventListener("click",function(){go(b.dataset.go)})});
+document.querySelectorAll(".cp[data-n]").forEach(function(b){b.addEventListener("click",function(){var n=b.dataset.n;var ok=function(){b.textContent="Tersalin"};var no=function(){b.textContent="Catat: "+n};try{navigator.clipboard.writeText(n).then(ok,no)}catch(e){no()}})});
+var TH="light";try{var sv=localStorage.getItem("spot-theme");if(sv==="light"||sv==="dark")TH=sv}catch(e){}
+var SUN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+var MOON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+function setTh(m){TH=m;document.documentElement.setAttribute("data-theme",m);var tg=document.getElementById("tg");tg.innerHTML=m==="dark"?SUN:MOON;tg.setAttribute("aria-label",m==="dark"?"Ganti ke mode terang":"Ganti ke mode gelap");try{localStorage.setItem("spot-theme",m)}catch(e){}if(window.L&&TLS.length)applyTiles()}
+document.getElementById("tg").addEventListener("click",function(){setTh(TH==="dark"?"light":"dark")});
+setTh(TH);
+initMaps();render();pickRender();renderVault();
+document.getElementById("netRetry").addEventListener("click",function(){if(!ONLINE)return;loadReports().then(function(){render();pickRender()});loadVault().then(renderVault)});
+(function(){var l=document.getElementById("legNote"),f=document.getElementById("foot"),p=document.getElementById("phNote");
+ if(ONLINE){l.textContent="· Peta dari OpenStreetMap. Setiap titik berasal dari laporan yang dikirim pengguna.";
+  f.textContent="SPOT adalah prototipe gagasan untuk PSN ke-9 2026. Laporan dan cerita yang dikirim tersimpan di server tanpa identitas pengirim.";
+  p.textContent=" Foto langsung tampil di galeri tab Statistik. Foto yang tidak pantas dihapus pengelola.";
+  loadReports().then(function(){render();pickRender()});loadVault().then(renderVault)}
+})();
+</script>
+</body>
+</html>
