@@ -183,6 +183,7 @@ input[type=file]::file-selector-button{margin-right:12px;padding:8px 14px;border
 .ac li.none{color:var(--mut);cursor:default}
 .ac li.none:hover{background:none}
 .mapfind{align-items:center}
+.hint a{color:var(--green-d);font-weight:700}
 </style>
 </head>
 <body>
@@ -244,7 +245,7 @@ input[type=file]::file-selector-button{margin-right:12px;padding:8px 14px;border
    <label for="rEnv">Kondisi sekitar (boleh pilih lebih dari satu)</label>
    <div id="rEnv"></div>
    <div class="chip" style="background:var(--bg);padding:12px;border-radius:8px">
-    <input type="checkbox" id="fabOn"><label for="fabOn" style="margin:0;font-weight:500"><b>Catat pakaian yang dikenakan saat kejadian (Opsional). Data hanya ditampilkan dalam bentuk gabungan untuk menunjukkan bahwa pakaian bukan penyebab kekerasan seksual.</label>
+    <input type="checkbox" id="fabOn"><label for="fabOn" style="margin:0;font-weight:500"><b>Catat pakaian yang dikenakan saat kejadian (opsional).</b> Data hanya ditampilkan dalam bentuk gabungan untuk menunjukkan bahwa pakaian bukan penyebab kekerasan seksual.</label>
    </div>
    <div id="fabBox" style="display:none"><label for="rFab">Pakaian saat kejadian</label><select id="rFab"></select></div>
    <label for="rNote">Cerita singkat (opsional)</label>
@@ -318,6 +319,7 @@ input[type=file]::file-selector-button{margin-right:12px;padding:8px 14px;border
    <p style="margin-top:16px"><button class="btn" type="submit">Bagikan secara anonim</button></p>
    <div class="msg" id="vMsg" role="status"></div>
    <p class="hint">Jika dalam bahaya, segera hubungi <a href="tel:129">129</a>, <a href="tel:112">112</a>, atau <a href="tel:110">110</a>.</p>
+  </form>
  </div>
 </section>
 
