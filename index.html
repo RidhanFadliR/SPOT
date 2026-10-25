@@ -601,7 +601,7 @@ setTh(TH);
 initMaps();render();pickRender();renderVault();
 document.getElementById("netRetry").addEventListener("click",function(){if(!ONLINE)return;loadReports().then(function(){render();pickRender()});loadVault().then(renderVault)});
 (function(){var l=document.getElementById("legNote"),f=document.getElementById("foot"),p=document.getElementById("phNote");
- if(ONLINE){l.textContent="· Peta dari OpenStreetMap. Setiap titik berasal dari laporan yang dikirim pengguna.";
+ if(ONLINE){l.textContent="Setiap titik menunjukkan lokasi berdasarkan laporan yang dikirim pengguna.";
   f.textContent="SPOT adalah prototipe gagasan untuk PSN ke-9 2026. Laporan dan cerita yang dikirim tersimpan di server tanpa identitas pengirim.";
   p.textContent=" Foto langsung tampil di galeri tab Statistik. Foto yang tidak pantas dihapus pengelola.";
   loadReports().then(function(){render();pickRender()});loadVault().then(renderVault)}
