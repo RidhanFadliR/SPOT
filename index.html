@@ -234,7 +234,7 @@ input[type=file]::file-selector-button{margin-right:12px;padding:8px 14px;border
  <div class="grid">
   <form class="card" id="form" novalidate>
    <h2>Laporkan kejadian</h2>
-   <p class="sub">Tanpa nama dan tanpa akun. Kamu menentukan sendiri apa yang dibagikan. Menyalahkan korban tidak pernah dibenarkan.</p>
+   <p class="sub">Ceritamu tetap anonim. Kamu bebas menentukan apa yang ingin dibagikan. Setiap cerita layak didengar tanpa penghakiman atau menyalahkan korban.</p>
    <div class="row">
     <div><label for="rType">Jenis kejadian</label><select id="rType"></select></div>
     <div><label for="rTime">Waktu kejadian</label><select id="rTime"></select></div>
@@ -244,14 +244,14 @@ input[type=file]::file-selector-button{margin-right:12px;padding:8px 14px;border
    <label for="rEnv">Kondisi sekitar (boleh pilih lebih dari satu)</label>
    <div id="rEnv"></div>
    <div class="chip" style="background:var(--bg);padding:12px;border-radius:8px">
-    <input type="checkbox" id="fabOn"><label for="fabOn" style="margin:0;font-weight:500"><b>Fabric of Truth (opsional).</b> Catat pakaian saat kejadian. Hanya dihitung gabungan untuk membuktikan bahwa pakaian bukan penyebab.</label>
+    <input type="checkbox" id="fabOn"><label for="fabOn" style="margin:0;font-weight:500"><b>Catat pakaian yang dikenakan saat kejadian (Opsional). Data hanya ditampilkan dalam bentuk gabungan untuk menunjukkan bahwa pakaian bukan penyebab kekerasan seksual.</label>
    </div>
    <div id="fabBox" style="display:none"><label for="rFab">Pakaian saat kejadian</label><select id="rFab"></select></div>
    <label for="rNote">Cerita singkat (opsional)</label>
    <textarea id="rNote" rows="3" maxlength="300" placeholder="Tidak perlu menyebut nama siapa pun."></textarea>
    <label for="rPhoto">Foto bukti pendukung (opsional)</label>
    <input type="file" id="rPhoto" accept="image/*">
-   <p class="hint" style="margin:6px 0 0">Boleh dikosongkan, laporan tanpa foto tetap terkirim. Pilih foto kondisi lokasi (jalan gelap, tanpa CCTV), hindari wajah orang. Data lokasi di dalam foto dihapus otomatis.<span id="phNote"></span></p>
+   <p class="hint" style="margin:6px 0 0">Foto bersifat opsional. Laporan tetap terkirim meski tanpa foto. Jika ingin menambahkan foto, pilih kondisi lingkungan sekitar, seperti jalan gelap atau area tanpa CCTV. Hindari foto yang menampilkan wajah orang. Informasi lokasi dalam foto akan dihapus secara otomatis. <span id="phNote"></span></p>
    <div id="prev"></div>
    <p style="margin-top:16px"><button class="btn" type="submit">Kirim laporan anonim</button></p>
    <div class="msg" id="msg" role="status"></div>
